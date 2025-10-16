@@ -1,0 +1,29 @@
+# with secret as volume mount
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: django-python-app
+  labels:
+    app: django-web-app
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: django-web-app
+  template:
+    metadata:
+      labels:
+        app: django-web-app
+    spec:
+      containers:
+      - name: python-container
+        image: bhars77/web-app:v1        
+        volumeMounts:
+          - name: db-connection
+            mountPath: /opt
+        ports:
+        - containerPort: 8000
+      volumes:
+        - name: db-connection
+          secret:
+            name: test-secret
