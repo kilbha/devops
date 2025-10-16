@@ -1,7 +1,8 @@
 1. Create 2 t2.medium with 20GB storage ( SonarQube and Nexus)
     For Nexus 4GB storage is required. 
 2. Create 1 t2.large with 25GB storage for Jenkins
-
+3. Repo -- https://github.com/jaiswaladi246/FullStack-Blogging-App
+4. https://github.com/jaiswaladi246/EKS-Complete 
 ########### Installing Jenkins ###############
 1. Login to jenkins VM
 2. sudo apt update
@@ -21,13 +22,16 @@
 16. Install trivy -- use google. 
 17. Cofigure SonarQube -- Manage Jenkins -- Credentials -- global -- Add credentials -- kind as secret-text -- id as sonar-token -- create. 
 18. Manage Jenkins -- System -- Scroll down to SonarQube servers -- Add sonarqube -- name as sonar-server -- give server_url till 9000 -- select token -- apply. 
-18. script -- uSE PIPELINE SYNTAX for help. 
+19. Once we run BuildNow -- creates jar file in snapshots. When we run again Nexus is going to fail -- TO solve this login to Nexus -- 
+    Settings -- Repsitories -- maven-snapshots -- Scroll to Deployment Policy ( Allow Redeploy). 
+20. Create private repository in Docker Hub -- 
+20. script -- uSE PIPELINE SYNTAX for help. 
     pipeline {
         agent any
 
         tools {
             jdk 'jdk17' -- name we have given.
-            maven 'maven3
+            maven 'maven3' -- name we have given. 
         }
 
 
@@ -76,6 +80,47 @@
                     sh "mvn package"
                 }
             }
+
+            stage('Publish Artifacts'){
+                steps {
+                    // Generate using pipeline Syntax
+                    // withMaven: Provide Maven environment -- maven version as maven3 -- JDK as jdk17 -- Global Maven Settings Config as myGlobalSettings -- Generate Pipeline Syntax
+                    // Copy here
+                    // Inside code -- sh "mvn deploy" -- apply
+                }
+            }
+
+            stage('Docker Build And Tag'){
+                steps {
+                    // Generate pipeline Syntax
+                    // withDockerRegistry: Setup Docker Registry Endpoint -- provide docker credentials
+                    // COPY IT -- Inside ---    script {
+                        withDockersomething{
+                            sh 'docker build -t bhars77/bloggingapp:latest .'
+                        }
+                    }
+                    
+                }
+            }
+
+            stage('Trivy Image SCAN'){
+                steps {
+                    sh "trivy image --format table -o image.html bhars77/bloggingapp:latest"
+                }
+            }
+
+            stage('Docker Push Image'){
+                steps {
+                    // Generate pipeline Syntax
+                    // withDockerRegistry: Setup Docker Registry Endpoint -- provide docker credentials
+                    // COPY IT -- Inside ---    script {
+                        withDockersomething{
+                            sh 'docker push bhars77/bloggingapp:latest'
+                        }
+                    }
+                    
+                }
+            }
         }
     }
 ########### Installing Nexus ####################
@@ -88,7 +133,35 @@
 6. Get admin password by sudo docker exec -it <docker-container-id> /bin/bash
 7. cat sonatype-work/nexus3/admin.password
 8. Sign in to nexus and setup new password
-9. 
+9. We have to add this in pom.xml for Nexus Configuration
+    <distributionManagement>
+        <repository>
+            <id>maven-releases</id>
+            <url>http://13.235.245.200:8081/repository/maven-releases/</url>
+        </repository>
+        <snapshotRepository>
+            <id>maven-snapshots</id>
+            <url>http://13.235.245.200:8081/repository/maven-snapshots/</url>
+        </snapshotRepository>
+    </distributionManagement>
+10. Go To Jenkins -- Manage Jenkins -- Managed Files -- Add new config -- Global Maven Settings -- ID as maven-settings -- Next -- Add server credentials here 
+    <servers>
+        <server>
+            <id>maven-releases</id>
+            <username>admin<username>
+            <password><Nexus-Password</password>
+        </server>
+    </servers>
+
+    <servers>
+        <server>
+            <id>maven-snapshots</id>
+            <username>admin<username>
+            <password><Nexus-Password</password>
+        </server>
+    </servers>
+11. Submit
+12. Now we are able to communicate with Nexus. 
 
 ########### Intalling SonarQube #################
 1. Login to SonarQube VM
@@ -99,3 +172,32 @@
 6. Login to it. admin, admin -- username, password. setup new password. 
 7. Adminstration Tab -- Users -- Security  -- Generate -- Keep it somewhere safe. 
 
+
+######### Setting UP EKS cluster with Terraform ##################
+1. Create Terra-Instance -- t2.medium -- 15GB storage. 
+2. sud apt update
+3. Install AWS CLI & Configure
+4. sudo snap install terraform --class 
+5. mkdir Terra
+6. cd Terra/
+7. vi main.tf -- from repostiory. 
+8. vi output.tf -- from repository
+9. vi variables.ts -- from repository
+10.teraaform init
+11. terraform plan
+12. terraform apply --auto-approve
+13. Install kubectl -- sudo snap install kubectl --classic
+14. Connect kubectl to cluster -- aws eks --region ap-south-1 update-kubeconfig --name devopsshack-cluster
+15. kubectl get nodes
+16. setup RBAC -- vim svc.yml ( outside terra folder) -- under name space webapps
+17. kubectl create ns webapps & kubectl apply -f svc.yml 
+18. vi role.yml -- get from github
+19. kubectl apply -f role.yml
+20. Bind role to svc account -- vi bind.yml
+21. kubectl apply -f bind.yml 
+22. Now -- Jenkins has permissions to update or delete it. 
+23. Create token for svc account -- click on link provided in repo  -- copy it
+24. vi jen-secret.yml -- change service account name -- apply. 
+25. kubectl apply -f jen-secret.yml -n webapps
+26. kubectl create secret docker-registry regcred \ ---- Get @ 1:25:22 -- replace password
+27. 
