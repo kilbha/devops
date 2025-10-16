@@ -1,0 +1,10 @@
+1. How to check top running processors usage of memory and disk?
+A. 
+
+   1. We can use top command in ubuntu which will list information about CPU and Memory. Gives descending order of processed based on 	CPU utilization percentage. 
+   2. I use iotop package to check the disk I/O speed and status. sudo apt install iotop -- installs it. iotop -- will give interactive shell. 
+   
+2. How to check which ports associated with which processor
+A. 1. lsof -i -P -n
+   2. netstat -tnlup -- sudo apt install net-tools
+
